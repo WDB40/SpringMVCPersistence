@@ -1,0 +1,75 @@
+package dmacc.controller;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import dmacc.beans.Contact;
+import dmacc.repository.ContactRepository;
+
+@Controller
+public class WebController {
+	
+	@Autowired
+	ContactRepository contactRepository;
+	
+	@GetMapping("/viewAll")
+	public String viewAllContacts(Model model) {
+		model.addAttribute("contacts", contactRepository.findAll());
+		return "results";
+	}
+	
+	@GetMapping("/inputContact")
+	public String addNewContact(Model model) {
+		Contact contact = new Contact();
+		model.addAttribute("newContact", contact);
+		return "input";
+	}
+	
+	@PostMapping("/inputContact")
+	public String addNewContact(@ModelAttribute Contact contact, Model model) {
+		contactRepository.save(contact);
+		model.addAttribute("contacts", contactRepository.findAll());
+		return "results";
+	}
+	
+	@GetMapping("/edit/{id}")
+	public String showUpdateForm(@PathVariable("id") long id, Model model) {
+		Contact contact = contactRepository
+							.findById(id)
+							.orElseThrow(()-> new IllegalArgumentException("Invalid User Id: " + id));
+		
+		model.addAttribute("contact", contact);
+		return "update";
+	}
+	
+	@PostMapping("update/{id}")
+	public String updateUser(@PathVariable("id") long id, @Valid Contact contact, BindingResult result, Model model) {
+		if(result.hasErrors()) {
+			contact.setId(id);
+			return "update";
+		}
+		
+		contactRepository.save(contact);
+		model.addAttribute("contacts", contactRepository.findAll());
+		return "results";
+	}
+	
+	@GetMapping("/delete/{id}")
+	public String deleteUser(@PathVariable("id") long id, Model model) {
+		Contact contact = contactRepository
+							.findById(id)
+							.orElseThrow(() -> new IllegalArgumentException("Invalid User Id: " + id));
+		
+		contactRepository.delete(contact);
+		model.addAttribute("contacts", contactRepository.findAll());
+		return "results";
+	}
+}
